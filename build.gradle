@@ -1,0 +1,38 @@
+plugins {
+    id 'groovy'
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.apache.groovy:groovy-all:4.0.10'
+    implementation 'org.seleniumhq.selenium:selenium-java:4.8.1'
+    implementation 'io.appium:java-client:8.3.0'
+    implementation 'io.javalin:javalin:5.4.2'
+    implementation 'io.javalin:javalin-rendering:5.4.2'
+    implementation 'org.thymeleaf:thymeleaf:3.1.1.RELEASE'
+    implementation 'org.slf4j:slf4j-simple:2.0.6'
+    implementation 'org.json:json:20230227'
+    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
+    implementation 'com.konghq:unirest-java:3.14.2:standalone'
+}
+
+testing {
+    suites {
+        test {
+            useSpock('2.3-groovy-4.0')
+        }
+    }
+}
+
+task runReportServer(dependsOn: 'classes', type: JavaExec){
+    main = 'qt.ta.ReportServer'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+application {
+    mainClass = 'qt.ta.App'
+}

@@ -1,0 +1,384 @@
+<html>
+  <head>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  </head>
+  <body>
+    <div id="modal1" class="modal">
+      <div class="modal-content">
+        <h4>Test Session Complete.</h4>
+        <p>Redirecting to test session page</p>
+      </div>
+    </div>
+    <header class="row deep-purple darken-4" style='margin-bottom:0px;'>
+      <div class="col s12">
+        <div style='font-size: 1.5em; font-weight: 600;'>Live Session</div>
+      </div>
+    </header>
+    <div class="row">
+      <div class="col s2 blue-grey">
+        <div style='font-size: 1.2em; font-weight: 500;'>Test Cases</div>
+        <ul id="testcases" class="collapsible">
+        </ul>
+      </div>
+      <div class="col s10 indigo lighten-5">
+        <section class='row' style='height: 300px'>
+          <div class='col s4'>
+            <span id='bluetooth' class="btn"><i class="material-icons medium">bluetooth</i><span></span></span>
+            <span id='battery' class="btn blue"><i class="material-icons medium">battery_std</i><span></span></span>
+          </div> 
+          <div class='col s8'>
+            <img id='frame' style='width: 200px'/>
+          </div>
+        </section>
+        <section class='row' style='height: 300px'>
+          <canvas class='col s10' id="chartDeviceMemory"></canvas>
+        </section>
+        <section class='row' style='height: 300px'>
+          <canvas class='col s10' id="chartDeviceCpu"></canvas>
+        </section>
+        <section class='row' style='height: 300px'>
+          <canvas class='col s10' id="chartDeviceBattery"></canvas>
+        </section>
+        <section class='row' style='height: 300px'>
+          <canvas class='col s10' id="chartPackages"></canvas>
+        </section>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+    <script>
+      $(document).ready(function(){
+        $('.collapsible').collapsible();
+      });
+      $(document).ready(function(){
+        $('.modal').modal();
+      });
+      var teststate = 0; // 0 - no test info, 1 - test runnning, 2 - test ended
+      var tests = []; 
+      var colors = ['#36a2eb', '#ff6384', '#ff9f40', '#4bc0c0', '#9966ff', '#ff6384', '#5a5a5a', '#8fc6f1'];
+      var chartContextDeviceMemory = document.getElementById('chartDeviceMemory');
+      var chartDeviceMemory = new Chart(chartContextDeviceMemory, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {label: 'Total', data: [], borderColor: colors[0]},
+            {label: 'Used', data: [], borderColor: colors[1]},
+            {label: 'Free', data: [], borderColor: colors[2]},
+            {
+              label: 'Test',
+              data: [],
+              stepped: true,
+              fill: true,
+              borderColor: 'black',
+              backgroundColor: 'black'
+            }
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y:{
+                title: {
+                  display: true,
+                  text: "Memory in MBs"
+                }
+            },
+            x: {
+                title: {
+                  display: true,
+                  text: "Time"
+                },
+                ticks: {
+                    display: false 
+                }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Device Memory Usage'
+            }
+          }
+        }
+      });
+
+      var chartContextDeviceCpu = document.getElementById('chartDeviceCpu');
+      var chartDeviceCpu = new Chart(chartContextDeviceCpu, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {label: 'Total', data: [], borderColor: colors[0]},
+            {label: 'User', data: [], borderColor: colors[1]},
+            {label: 'System', data: [], borderColor: colors[2]}, 
+            {label: 'Idle', data: [], borderColor: colors[3]}, 
+            {label: 'Niced', data: [], borderColor: colors[4]},
+            {label: 'I/O Wait', data: [], borderColor: colors[5]},
+            {label: 'Interrupts', data: [], borderColor: colors[6]},
+            {label: 'Software Interrupts', data: [], borderColor: colors[7]},
+            {label: 'Host', data: [], borderColor: colors[8]},
+            {
+              label: 'Test',
+              data: [],
+              stepped: true,
+              fill: true,
+              borderColor: 'black',
+              backgroundColor: 'black'
+            }
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y:{
+                title: {
+                  display: true,
+                  text: "% of Total CPU Used"
+                }
+            },
+            x: {
+                title: {
+                  display: true,
+                  text: "Time"
+                },
+                ticks: {
+                    display: false 
+                }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Device CPU Usage'
+            }
+          }
+        }
+      });
+
+      var chartContextDeviceBattery = document.getElementById('chartDeviceBattery');
+      var chartDeviceBattery = new Chart(chartContextDeviceBattery, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [
+            {label: '% Level', data: []},
+            {label: 'Charge', data: [], type: 'line'}
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+                title: {
+                  display: true,
+                  text: "Time"
+                },
+                ticks: {
+                    display: false 
+                }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Device Battery Stats'
+            }
+          }
+        }
+      });
+
+      var chartContextPackages = document.getElementById('chartPackages');
+      var chartPackages = new Chart(chartContextPackages, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y:{
+                title: {
+                  display: true,
+                  text: "% Usage (CPU / Memory)"
+                }
+            },
+            x: {
+                title: {
+                  display: true,
+                  text: "Time"
+                },
+                ticks: {
+                    display: false 
+                }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Package CPU / Memory Usage %'
+            }
+          }
+        }
+      });
+      
+      var frames = new WebSocket("ws://localhost:4500/frame");
+      frames.onmessage = function(event){
+         $('#frame').attr('src','data:image/png;base64, ' + event.data);
+      }
+      var ws = new WebSocket("ws://localhost:4500/data");
+        ws.onmessage = function(event){
+          var record = JSON.parse(event.data);
+          if(record.record == 'bluetooth'){
+            if(record.value.enabled){
+              $('#bluetooth').removeClass('red');
+              $('#bluetooth').addClass('teal');
+              $('#bluetooth span').html('Enabled');
+            }else{
+              $('#bluetooth').removeClass('teal');
+              $('#bluetooth').addClass('red');
+              $('#bluetooth span').html('Disabled');
+            }
+          }
+          if(record.scope == 'end'){
+            var instance = M.Modal.getInstance(document.querySelector('#modal1'));
+            instance.open();
+            setTimeout(function(){
+              window.location.href = record.value.url;
+            }, 3000);
+          }
+          if(record.scope == 'test'){
+            if(record.state == "start"){
+              teststate = 1;
+              var test = {};
+              test.description = record.value.description;
+              test.start = record.timestamp;
+              tests.push(test);
+            }
+            if(record.state == "end"){
+              teststate = 2;
+              tests[tests.length-1].end = record.timestamp;
+              var test = tests[tests.length - 1]; 
+              $("#testcases").append("<li><div class='collapsible-header'>"+test.description+"</div><div class='collapsible-body'><div>Start Time: "+test.start+"</div><div>End Time: "+test.end+"</div></div></li>");
+            }
+            chartDeviceMemory.data.labels.push(record.timestamp/1000);
+            chartDeviceCpu.data.labels.push(record.timestamp/1000);
+            if(record.state == "start"){
+              chartDeviceMemory.data.datasets[3].data.push(-500);
+              chartDeviceCpu.data.datasets[9].data.push(-100);
+            }
+            if(record.state == "end"){
+              chartDeviceMemory.data.datasets[3].data.push(-100);
+              chartDeviceCpu.data.datasets[9].data.push(-10);
+            }
+            var lastindex = chartDeviceMemory.data.datasets[0].data.length - 1;
+            chartDeviceMemory.data.datasets[0].data.push(chartDeviceMemory.data.datasets[0].data[lastindex]);
+            chartDeviceMemory.data.datasets[1].data.push(chartDeviceMemory.data.datasets[1].data[lastindex]);
+            chartDeviceMemory.data.datasets[2].data.push(chartDeviceMemory.data.datasets[2].data[lastindex]);
+            chartDeviceMemory.update();
+            
+            lastindex = chartDeviceCpu.data.datasets[0].data.length - 1;
+            chartDeviceCpu.data.datasets[0].data.push(chartDeviceCpu.data.datasets[0].data[lastindex]);
+            chartDeviceCpu.data.datasets[1].data.push(chartDeviceCpu.data.datasets[1].data[lastindex]);
+            chartDeviceCpu.data.datasets[2].data.push(chartDeviceCpu.data.datasets[2].data[lastindex]);
+            chartDeviceCpu.data.datasets[3].data.push(chartDeviceCpu.data.datasets[3].data[lastindex]);
+            chartDeviceCpu.data.datasets[4].data.push(chartDeviceCpu.data.datasets[4].data[lastindex]);
+            chartDeviceCpu.data.datasets[5].data.push(chartDeviceCpu.data.datasets[5].data[lastindex]);
+            chartDeviceCpu.data.datasets[6].data.push(chartDeviceCpu.data.datasets[6].data[lastindex]);
+            chartDeviceCpu.data.datasets[7].data.push(chartDeviceCpu.data.datasets[7].data[lastindex]);
+            chartDeviceCpu.data.datasets[8].data.push(chartDeviceCpu.data.datasets[8].data[lastindex]);
+            chartDeviceCpu.update();
+          }
+          if(record.scope == 'device'){
+            if(record.record == 'memory'){
+              chartDeviceMemory.data.labels.push(record.timestamp/1000);
+              chartDeviceMemory.data.datasets[0].data.push(record.value.total/(1024*1024));
+              chartDeviceMemory.data.datasets[1].data.push(record.value.used/(1024*1024));
+              chartDeviceMemory.data.datasets[2].data.push(record.value.free/(1024*1024));
+              if(teststate == 1){
+                chartDeviceMemory.data.datasets[3].data.push(-500);
+              }else if(teststate == 2){
+                chartDeviceMemory.data.datasets[3].data.push(-100);
+              }else{
+                chartDeviceMemory.data.datasets[3].data.push(0);
+              }
+              chartDeviceMemory.update();
+            }
+            if(record.record == 'cpu'){
+              chartDeviceCpu.data.labels.push(record.timestamp/1000);
+              chartDeviceCpu.data.datasets[0].data.push(record.value.cpu);
+              chartDeviceCpu.data.datasets[1].data.push(record.value.user);
+              chartDeviceCpu.data.datasets[2].data.push(record.value.sys);
+              chartDeviceCpu.data.datasets[3].data.push(record.value.idle);
+              chartDeviceCpu.data.datasets[4].data.push(record.value.nice);
+              chartDeviceCpu.data.datasets[5].data.push(record.value.iow);
+              chartDeviceCpu.data.datasets[6].data.push(record.value.irq);
+              chartDeviceCpu.data.datasets[7].data.push(record.value.sirq);
+              chartDeviceCpu.data.datasets[8].data.push(record.value.host);
+              if(teststate == 1){
+                chartDeviceCpu.data.datasets[9].data.push(-100);
+              }else if(teststate == 2){
+                chartDeviceCpu.data.datasets[9].data.push(-10);
+              }else{
+                chartDeviceCpu.data.datasets[9].data.push(0);
+              }
+              chartDeviceCpu.update();
+            }
+            if(record.record == 'battery'){
+              chartDeviceBattery.data.labels.push(record.timestamp/1000);
+              chartDeviceBattery.data.datasets[0].data.push(record.value.level);
+              chartDeviceBattery.data.datasets[1].data.push(record.value.charge);
+              chartDeviceBattery.update();
+              $('#battery span').html(record.value.level + " %");
+            }
+          }
+          if(record.scope == "package"){
+              chartPackages.data.labels.push(record.timestamp/1000);
+              record.value.forEach(function(packageValue){
+                var pname = packageValue.name + '--%CPU';
+                var packageDataSetDoesNotExist = true;
+                chartPackages.data.datasets.forEach(function(dataset){
+                  if(dataset.label == pname){
+                    dataset.data.push(packageValue['%cpu']);
+                    packageDataSetDoesNotExist = false;
+                  }
+                });
+                if(packageDataSetDoesNotExist){
+                  console.log(pname);
+                  var dataset = {};
+                  dataset.label = pname;
+                  dataset.data = [];
+                  dataset.data.push(packageValue['%cpu']);
+                  chartPackages.data.datasets.push(dataset);
+                }
+                pname = packageValue.name + '--%Memory';
+                packageDataSetDoesNotExist = true;
+                chartPackages.data.datasets.forEach(function(dataset){
+                  if(dataset.label == pname){
+                    dataset.data.push(packageValue['%memory']);
+                    packageDataSetDoesNotExist = false;
+                  }
+                });
+                if(packageDataSetDoesNotExist){
+                  console.log(pname);
+                  var dataset = {};
+                  dataset.label = pname;
+                  dataset.data = [];
+                  dataset.data.push(packageValue['%memory']);
+                  chartPackages.data.datasets.push(dataset);
+                }
+              });
+              chartPackages.update();
+          }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  </body>
+</html>

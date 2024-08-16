@@ -1,0 +1,14 @@
+{
+  "settings": {
+    "appium:appPackage": "com.android.settings",
+    "appium:appActivity": "com.android.settings.Settings"
+  },
+  "gmail": {
+    "appium:appPackage": "com.google.android.gm",
+    "appium:appActivity": "com.google.android.gm.ui.MailActivityGmail"
+  },
+  "imdb":{
+    "appium:appPackage": "com.imdb.mobile",
+    "appium:appActivity": "com.imdb.mobile.HomeActivity"
+  }
+}
