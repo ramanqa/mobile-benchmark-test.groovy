@@ -16,3 +16,4 @@
    ```
  4. Point browser to: http://localhost:4500/live
     
+![image](https://github.com/user-attachments/assets/1ba87367-65b1-48c1-b249-78d9c0ee454a)
